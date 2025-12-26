@@ -71,8 +71,9 @@ npm run dev
 | `DB_USERNAME` | 데이터베이스 사용자명 |
 | `DB_PASSWORD` | 데이터베이스 비밀번호 |
 | `DB_NAME` | 데이터베이스 이름 |
-| `OPENAI_API_KEY` | OpenAI API 키 |
-| `WEBEX_ACCESS_TOKEN` | Webex API 토큰 ✅ 설정됨 |
+| `OPENAI_API_KEY` | (사용안함) 기존 OpenAI 키 |
+| `GEMINI_API_KEY` | **Google Gemini API 키** (필수) ✅ 설정됨 |
+| `WEBEX_ACCESS_TOKEN` | Webex Meeting 생성용 User Token ✅ 설정됨 |
 
 ---
 
@@ -84,15 +85,15 @@ npm run dev
 | POST | `/api/users` | 사용자 생성 |
 | GET | `/api/users/:id` | 사용자 조회 |
 
-### AI 챗봇
+### AI 챗봇 (Gemini)
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/chat` | 메시지 전송 (저장 ❌) |
+| POST | `/api/chat` | 메시지 전송 (Gemini Pro/Flash 연동) |
 
 ### 감정 요약
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/summary` | AI 요약 생성 |
+| POST | `/api/summary` | Gemini 감정 분석 요약 생성 |
 | GET | `/api/summary/:id` | 요약 조회 |
 
 ### 상담
@@ -115,29 +116,26 @@ npm run dev
 
 ## ✨ 주요 기능
 
-### 1. 랜딩 페이지
-- 프리미엄 다크 테마 디자인
-- Glassmorphism 효과
-- 그라데이션 애니메이션
-- 반응형 레이아웃
+### 1. 랜딩 페이지 (Healing Design)
+- **파스텔 힐링 테마**: 심리적 안정을 주는 Blue(#6B9BD2) & Green(#A8D5BA) 컬러 팔레트
+- **Glassmorphism**: 투명하고 깨끗한 느낌의 현대적 UI
+- **인터랙티브 애니메이션**: 부드러운 플로팅(Floating) 효과와 페이드인
+- **Mobile First**: 모든 기기에서 최적화된 반응형 레이아웃
 
-### 2. AI 채팅
-- 실시간 메시지 교환
-- 타이핑 인디케이터
-- 세션 기반 대화 (저장 안함)
-- 따뜻한 AI 응답
+### 2. AI 채팅 (Advanced AI)
+- **모델**: **Google Gemini 2.5 Flash** (High-Performance Custom Config)
+- **감성 지능**: 내담자의 감정을 읽고 공감하는 페르소나 적용
+- **다국어 지원**: 한국어/영어 등 입력 언어 자동 감지 및 응답
+- **실시간 반응**: 타이핑 인디케이터와 자연스러운 딜레이
 
-### 3. 감정 분석
-- emotion_tags: 감정 태그 배열
-- dominant_emotion: 주요 감정
-- repeated_topics: 반복 주제
-- risk_flag: 위험 여부
-- intensity_score: 강도 점수
+### 3. 지능형 위기 개입 (Smart Intervention)
+- **실시간 위험 감지**: 대화 중 자해/자살 위험 징후 포착 시 `[RISK_DETECTED]` 트리거
+- **Zero-Click 구조**: 위험 감지 즉시 백엔드에서 Webex 미팅룸 자동 생성
+- **골든타임 확보 UI**: 채팅창 내 **[🚨 긴급 상담 입장]** 버튼 즉시 노출 (Red Alert Badge)
 
-### 4. Webex 상담 연결
-- 자동 화상회의 생성
-- 상담사 대시보드
-- Webhook 상태 업데이트
+### 4. 데이터 및 프라이버시
+- **휘발성 세션**: 상담 종료 시 대화 내용은 즉시 파기 (DB 저장 X)
+- **비식별 분석**: 상담 개선을 위한 감정/주제 데이터만 익명화하여 저장
 
 ---
 
@@ -168,8 +166,8 @@ npm run dev
 |------|------|
 | Frontend | Next.js 15, React 19, TailwindCSS |
 | Backend | NestJS, TypeORM, PostgreSQL |
-| AI | OpenAI GPT-4 |
-| Video | Cisco Webex Meetings API |
+| AI | **Google Gemini API** (Gemini 2.5 Flash / Pro) |
+| Video | **Cisco Webex Meetings API** |
 
 ---
 

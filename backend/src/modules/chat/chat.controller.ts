@@ -1,10 +1,19 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ChatMessageDto, ChatResponseDto } from './dto/chat.dto';
+import { ChatMessageDto, ChatResponseDto, GreetingResponseDto } from './dto/chat.dto';
 
 @Controller('api/chat')
 export class ChatController {
     constructor(private readonly chatService: ChatService) { }
+
+    @Get('greeting')
+    async getGreeting(): Promise<GreetingResponseDto> {
+        const result = await this.chatService.startSession();
+        return {
+            greeting: result.greeting,
+            session_id: result.sessionId,
+        };
+    }
 
     @Post()
     async sendMessage(@Body() chatDto: ChatMessageDto): Promise<ChatResponseDto> {
@@ -16,6 +25,7 @@ export class ChatController {
         return {
             response: result.response,
             session_id: result.sessionId,
+            meeting_url: result.meeting_url,
         };
     }
 }

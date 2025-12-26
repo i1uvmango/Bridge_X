@@ -1,0 +1,81 @@
+{
+  "logs": [
+    "Testing with Token: NGUyNTgxMDYtMTR...",
+    "1. Testing People API (Me)...",
+    "✅ Identity Verified: xcruisermk@gmail.com (person)",
+    "✅ Good: This is a USER token.",
+    "\n2. Testing Meeting Creation...",
+    "✅ Meeting Created! ID: 604d10da6d3248cc9014ea66c7b28d28",
+    "WebLink: https://meet1453.webex.com/meet1453/j.php?MTID=mf2fd5f2e5f43a7e967a22a4474663f5b",
+    "✅ Test meeting deleted."
+  ],
+  "error": null,
+  "success": true,
+  "meeting": {
+    "id": "604d10da6d3248cc9014ea66c7b28d28",
+    "meetingNumber": "26422739161",
+    "title": "Test Meeting (Agent Check)",
+    "password": "AEnmbuR4e68",
+    "phoneAndVideoSystemPassword": "23662874",
+    "meetingType": "meetingSeries",
+    "state": "active",
+    "timezone": "UTC",
+    "start": "2025-12-26T09:30:00Z",
+    "end": "2025-12-26T10:30:00Z",
+    "hostUserId": "Y2lzY29zcGFyazovL3VzL1BFT1BMRS9lZDRkNzQxYi0xNWUxLTQ3NzgtYWRhMS0zMmFhMzhkNTg3MTk",
+    "hostDisplayName": "C mk",
+    "hostEmail": "xcruisermk@gmail.com",
+    "hostKey": "894650",
+    "siteUrl": "meet1453.webex.com",
+    "webLink": "https://meet1453.webex.com/meet1453/j.php?MTID=mf2fd5f2e5f43a7e967a22a4474663f5b",
+    "sipAddress": "26422739161@meet1453.webex.com",
+    "dialInIpAddress": "210.4.202.4",
+    "enabledAutoRecordMeeting": false,
+    "allowAuthenticatedDevices": true,
+    "enabledJoinBeforeHost": true,
+    "joinBeforeHostMinutes": 5,
+    "enableConnectAudioBeforeHost": true,
+    "excludePassword": false,
+    "publicMeeting": false,
+    "enableAutomaticLock": false,
+    "unlockedMeetingJoinSecurity": "allowJoinWithLobby",
+    "meetingOptions": {
+      "enabledChat": true,
+      "enabledVideo": true,
+      "enabledFileTransfer": false
+    },
+    "attendeePrivileges": {
+      "enabledShareContent": true,
+      "enabledSaveDocument": true,
+      "enabledPrintDocument": true,
+      "enabledAnnotate": true,
+      "enabledViewParticipantList": true,
+      "enabledViewThumbnails": true,
+      "enabledRemoteControl": true,
+      "enabledViewAnyDocument": true,
+      "enabledViewAnyPage": true,
+      "enabledContactOperatorPrivately": false,
+      "enabledChatHost": true,
+      "enabledChatPresenter": true,
+      "enabledChatOtherParticipants": true
+    },
+    "sessionTypeId": 628,
+    "scheduledType": "meeting",
+    "simultaneousInterpretation": {
+      "enabled": false
+    },
+    "enabledVisualWatermark": false,
+    "enabledBreakoutSessions": false,
+    "audioConnectionOptions": {
+      "audioConnectionType": "VoIP",
+      "enabledTollFreeCallIn": false,
+      "enabledGlobalCallIn": false,
+      "enabledAudienceCallBack": false,
+      "entryAndExitTone": "noTone",
+      "allowHostToUnmuteParticipants": false,
+      "allowAttendeeToUnmuteSelf": true,
+      "muteAttendeeUponEntry": false
+    },
+    "enabledLiveStream": false
+  }
+}

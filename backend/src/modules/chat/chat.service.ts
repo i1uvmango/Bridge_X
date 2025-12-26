@@ -1,37 +1,91 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { AIService, ConversationMessage } from '../../services/ai/ai.service';
+import { AIService } from '../../services/ai/ai.service';
+import { WebexService } from '../webex/webex.service';
+
+export interface ConversationMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 // In-memory session store (production should use Redis)
 const sessionStore = new Map<string, ConversationMessage[]>();
+// Track if a session has already triggered a crisis alert
+const sessionCrisisStore = new Map<string, boolean>();
 
 @Injectable()
 export class ChatService {
-    constructor(private readonly aiService: AIService) { }
+    constructor(
+        private readonly aiService: AIService,
+        @Inject(forwardRef(() => WebexService))
+        private readonly webexService: WebexService,
+    ) { }
 
     async processMessage(
         message: string,
         sessionId?: string,
-    ): Promise<{ response: string; sessionId: string }> {
+    ): Promise<{ response: string; sessionId: string; meeting_url?: string }> {
         // Create or get session
         const currentSessionId = sessionId || uuidv4();
 
         if (!sessionStore.has(currentSessionId)) {
             sessionStore.set(currentSessionId, []);
+            sessionCrisisStore.set(currentSessionId, false);
         }
 
         const messages = sessionStore.get(currentSessionId)!;
 
-        // Generate AI response
-        const response = await this.aiService.generateChatResponse(messages, message);
+        // 1. Add user message to history
+        const userMsgObj: ConversationMessage = { role: 'user', content: message };
+        messages.push(userMsgObj);
 
-        // Store messages in session (NOT in database)
-        messages.push({ role: 'user', content: message });
-        messages.push({ role: 'assistant', content: response });
+        // 2. Generate AI response using Gemini
+        // We pass the conversation context + new user message
+        // Note: In a real app, you might want to limit context window size
+        let aiResponse = await this.aiService.generateChatResponse(messages, message);
+
+        let meeting_url: string | undefined;
+
+        // 3. Check for [RISK_DETECTED] tag
+        if (aiResponse.includes('[RISK_DETECTED]')) {
+            // Remove the tag from the visible response
+            aiResponse = aiResponse.replace('[RISK_DETECTED]', '').trim();
+
+            // Check if we already handled a crisis for this session to avoid Spamming meetings
+            // But for safety, maybe we allow multiple? Let's check the store.
+            const alreadyTriggered = sessionCrisisStore.get(currentSessionId);
+
+            if (!alreadyTriggered) {
+                try {
+                    // 4. Create Webex Meeting automatically (Webex Bot action)
+                    // We use a dummy user ID for now or anonymous
+                    const meeting = await this.webexService.createCounselingMeeting(
+                        `anonymous-${currentSessionId.substring(0, 8)}`,
+                        'crisis-auto-generated'
+                    );
+                    meeting_url = meeting.webLink;
+
+                    // Mark as triggered
+                    sessionCrisisStore.set(currentSessionId, true);
+
+                    // Add a system-like message to the response?
+                    // Actually, the frontend will see meeting_url and show the alert button.
+                    // We can also append a text guidance.
+                    // aiResponse += "\n\n(상담사가 연결되었습니다. 아래 버튼을 눌러 상담실로 입장해주세요.)";
+
+                } catch (error) {
+                    console.error('Failed to auto-create crisis meeting:', error);
+                }
+            }
+        }
+
+        // 5. Store AI response
+        messages.push({ role: 'assistant', content: aiResponse });
 
         return {
-            response,
+            response: aiResponse,
             sessionId: currentSessionId,
+            meeting_url, // Return this so frontend can show the 'Join' button immediately
         };
     }
 
@@ -41,5 +95,22 @@ export class ChatService {
 
     clearSession(sessionId: string): void {
         sessionStore.delete(sessionId);
+        sessionCrisisStore.delete(sessionId);
+    }
+
+    async startSession(): Promise<{ greeting: string; sessionId: string }> {
+        const sessionId = uuidv4();
+        const greeting = "안녕하세요! 마음이 힘드실 때 언제든 찾아주세요. 오늘 기분이 어떠신가요?";
+
+        // Initialize session
+        sessionStore.set(sessionId, [
+            { role: 'assistant', content: greeting }
+        ]);
+        sessionCrisisStore.set(sessionId, false);
+
+        return {
+            greeting,
+            sessionId,
+        };
     }
 }

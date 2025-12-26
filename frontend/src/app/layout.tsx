@@ -22,8 +22,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${geist.variable} antialiased`}>
         <Navbar />
-        <main className="pt-20">
-          {children}
+        <main className="pt-20 min-h-screen flex flex-col items-center">
+          <div className="w-full">
+            {children}
+          </div>
         </main>
       </body>
     </html>

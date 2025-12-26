@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { sendChatMessage, ChatMessage } from '@/lib/api';
+import { sendChatMessage, getGreeting, ChatMessage } from '@/lib/api';
 
 interface ChatInterfaceProps {
     onSessionReady?: (sessionId: string, messages: ChatMessage[]) => void;
@@ -12,6 +12,7 @@ export default function ChatInterface({ onSessionReady }: ChatInterfaceProps) {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -21,6 +22,27 @@ export default function ChatInterface({ onSessionReady }: ChatInterfaceProps) {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Fetch initial greeting when component mounts
+    useEffect(() => {
+        const initChat = async () => {
+            if (isInitialized) return;
+
+            try {
+                const response = await getGreeting();
+                setSessionId(response.session_id);
+                setMessages([{ role: 'assistant', content: response.greeting }]);
+                setIsInitialized(true);
+            } catch (error) {
+                console.error('Greeting error:', error);
+                // Fallback greeting
+                setMessages([{ role: 'assistant', content: "Hey, it's safe here. How do you feel? :)" }]);
+                setIsInitialized(true);
+            }
+        };
+
+        initChat();
+    }, [isInitialized]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -33,12 +55,20 @@ export default function ChatInterface({ onSessionReady }: ChatInterfaceProps) {
         try {
             const response = await sendChatMessage(userMessage, sessionId || undefined);
             setSessionId(response.session_id);
-            setMessages((prev) => [
-                ...prev,
-                { role: 'assistant', content: response.response },
-            ]);
 
-            // Notify parent when we have enough conversation
+            setMessages((prev) => {
+                const newMessages: ChatMessage[] = [...prev, { role: 'assistant', content: response.response }];
+
+                // If crisis detected and meeting created automatically
+                if (response.meeting_url) {
+                    newMessages.push({
+                        role: 'assistant',
+                        content: `🚨 [긴급 상담 연결]\n\n전문 상담사가 대기 중입니다.\n\n[상담실 입장하기](${response.meeting_url})`
+                    });
+                }
+                return newMessages;
+            });
+
             if (messages.length >= 4 && onSessionReady) {
                 onSessionReady(response.session_id, [
                     ...messages,
@@ -65,75 +95,96 @@ export default function ChatInterface({ onSessionReady }: ChatInterfaceProps) {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             {/* Messages area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && (
-                    <div className="text-center py-12 animate-fadeIn">
-                        <div className="text-6xl mb-4 animate-float">💜</div>
-                        <h2 className="text-2xl font-bold gradient-text mb-2">
-                            안녕하세요, 마음쉼터입니다
-                        </h2>
-                        <p className="text-gray-400 max-w-md mx-auto">
-                            편안하게 이야기해 주세요. 당신의 감정을 들을 준비가 되어 있어요.
-                            모든 대화는 안전하게 보호됩니다.
-                        </p>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1rem', paddingTop: '2rem' }}>
+                {!isInitialized && isLoading && messages.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '3rem 0' }} className="animate-fadeIn">
+                        <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="animate-float">🌿</div>
+                        <p style={{ color: '#6b7280' }}>연결 중...</p>
                     </div>
                 )}
 
-                {messages.map((msg, idx) => (
-                    <div
-                        key={idx}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-                    >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {messages.map((msg, idx) => (
                         <div
-                            className={
-                                msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'
-                            }
+                            key={idx}
+                            style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}
+                            className="animate-fadeIn"
                         >
-                            {msg.content}
+                            <div className={msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}>
+                                {msg.content.split('\n').map((line, i) => {
+                                    const linkMatch = line.match(/\[(.*?)\]\((.*?)\)/);
+                                    if (linkMatch) {
+                                        return (
+                                            <div key={i} style={{ marginTop: '0.5rem' }}>
+                                                <a
+                                                    href={linkMatch[2]}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        background: '#ef4444',
+                                                        color: 'white',
+                                                        padding: '0.5rem 1rem',
+                                                        borderRadius: '0.5rem',
+                                                        textDecoration: 'none',
+                                                        fontWeight: 'bold',
+                                                        fontSize: '0.875rem'
+                                                    }}
+                                                >
+                                                    {linkMatch[1]}
+                                                </a>
+                                            </div>
+                                        );
+                                    }
+                                    return <div key={i}>{line}</div>;
+                                })}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
 
-                {isLoading && (
-                    <div className="flex justify-start animate-fadeIn">
-                        <div className="chat-bubble-ai flex items-center gap-2">
-                            <span className="animate-pulse-slow">생각하는 중</span>
-                            <span className="flex gap-1">
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                            </span>
+                    {isLoading && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-start' }} className="animate-fadeIn">
+                            <div className="chat-bubble-ai" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ color: '#6b7280' }} className="animate-pulse-slow">생각하는 중</span>
+                                <span style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <span style={{ width: '0.5rem', height: '0.5rem', background: '#6B9BD2', borderRadius: '9999px', animation: 'bounce 1s infinite', animationDelay: '0ms' }}></span>
+                                    <span style={{ width: '0.5rem', height: '0.5rem', background: '#6B9BD2', borderRadius: '9999px', animation: 'bounce 1s infinite', animationDelay: '150ms' }}></span>
+                                    <span style={{ width: '0.5rem', height: '0.5rem', background: '#6B9BD2', borderRadius: '9999px', animation: 'bounce 1s infinite', animationDelay: '300ms' }}></span>
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Input area */}
-            <div className="p-4 border-t border-zinc-800">
-                <div className="flex gap-3">
+            <div style={{ padding: '1rem', borderTop: '1px solid #e5e7eb', flexShrink: 0, background: '#fff' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '48rem', margin: '0 auto' }}>
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="마음속 이야기를 들려주세요..."
-                        className="input flex-1"
+                        className="input"
+                        style={{ flex: 1 }}
                         disabled={isLoading}
                     />
                     <button
                         onClick={handleSend}
                         disabled={isLoading || !input.trim()}
-                        className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed px-6"
+                        className="btn-primary"
+                        style={{ padding: '0.75rem 1.5rem', opacity: isLoading || !input.trim() ? 0.5 : 1, cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer' }}
                     >
                         전송
                     </button>
                 </div>
                 {sessionId && messages.length >= 6 && (
-                    <p className="text-sm text-gray-500 mt-2 text-center">
+                    <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '0.5rem', textAlign: 'center' }}>
                         대화가 충분히 진행되었습니다. 상담사 연결을 원하시면 &quot;상담 요청&quot; 버튼을 눌러주세요.
                     </p>
                 )}

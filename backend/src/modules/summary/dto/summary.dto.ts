@@ -15,4 +15,5 @@ export class SummaryResponseDto {
     repeated_topics: string[];
     risk_flag: boolean;
     intensity_score: number;
+    meeting_url?: string; // Webex meeting URL if risk detected
 }

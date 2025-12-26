@@ -16,4 +16,10 @@ export class ChatMessageDto {
 export class ChatResponseDto {
     response: string;
     session_id: string;
+    meeting_url?: string;
+}
+
+export class GreetingResponseDto {
+    greeting: string;
+    session_id: string;
 }

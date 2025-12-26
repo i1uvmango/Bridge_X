@@ -8,6 +8,7 @@ export interface ChatMessage {
 export interface ChatResponse {
     response: string;
     session_id: string;
+    meeting_url?: string;
 }
 
 export interface SummaryResponse {
@@ -17,6 +18,7 @@ export interface SummaryResponse {
     repeated_topics: string[];
     risk_flag: boolean;
     intensity_score: number;
+    meeting_url?: string;
 }
 
 export interface CounselingResponse {
@@ -59,6 +61,11 @@ export async function createUser(nickname: string, region?: string): Promise<Use
 }
 
 // Chat API
+export async function getGreeting(): Promise<{ greeting: string; session_id: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/chat/greeting`);
+    return res.json();
+}
+
 export async function sendChatMessage(
     message: string,
     sessionId?: string,

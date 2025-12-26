@@ -33,10 +33,15 @@ export class WebexService {
     ): Promise<WebexMeeting> {
         try {
             const now = new Date();
-            const start = new Date(now.getTime() + 5 * 60000); // 5분 후 시작
+            const start = new Date(now.getTime()); // 즉시 시작 (지연 없음)
             const end = new Date(start.getTime() + 60 * 60000); // 1시간 미팅
 
-            const response = await this.client.post('/meetings', {
+            this.logger.log(`Creating Webex meeting for user: ${userId}`);
+            // Mask token for security in logs
+            const token = this.configService.get('WEBEX_ACCESS_TOKEN');
+            this.logger.debug(`Token being used (first 10 chars): ${token?.substring(0, 10)}...`);
+
+            const payload = {
                 title: `심리 상담 세션 - ${userId.slice(0, 8)}`,
                 start: start.toISOString(),
                 end: end.toISOString(),
@@ -45,12 +50,28 @@ export class WebexService {
                 enabledJoinBeforeHost: true,
                 joinBeforeHostMinutes: 5,
                 publicMeeting: false,
-            });
+            };
 
-            this.logger.log(`Created Webex meeting: ${response.data.id}`);
+            this.logger.debug(`Webex API Payload: ${JSON.stringify(payload)}`);
+
+            const response = await this.client.post('/meetings', payload);
+
+            this.logger.log(`Webex API Response Status: ${response.status}`);
+            this.logger.debug(`Webex API Response Data: ${JSON.stringify(response.data)}`);
+
+            if (!response.data || !response.data.webLink) {
+                this.logger.warn('WARNING: Webex API did not return a webLink!');
+            }
+
+            this.logger.log(`Created Webex meeting ID: ${response.data.id}`);
             return response.data;
         } catch (error: any) {
-            this.logger.error('Webex meeting creation failed:', error.response?.data);
+            this.logger.error('Webex meeting creation failed details:', {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                message: error.message
+            });
             throw new HttpException(
                 error.response?.data?.message || 'Webex 미팅 생성 실패',
                 error.response?.status || 500,

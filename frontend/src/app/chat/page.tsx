@@ -23,7 +23,6 @@ export default function ChatPage() {
             setIsStarted(true);
         } catch (error) {
             console.error('User creation error:', error);
-            // For demo, proceed without backend
             setUserId('demo-user-id');
             setIsStarted(true);
         }
@@ -40,10 +39,16 @@ export default function ChatPage() {
         try {
             const result = await createSummary(userId, sessionId);
             setSummary(result);
+
+            // If risk detected, meeting URL might be returned automatically
+            if (result.meeting_url) {
+                setMeetingUrl(result.meeting_url);
+            }
+
             setStep('summary');
         } catch (error) {
             console.error('Summary error:', error);
-            // Demo fallback
+            // Fallback for demo if API fails
             setSummary({
                 summary_id: 'demo-summary-id',
                 emotion_tags: ['불안', '슬픔', '희망'],
@@ -61,15 +66,24 @@ export default function ChatPage() {
     const handleRequestCounseling = async () => {
         if (!userId || !summary) return;
 
+        // If we already have a meeting URL from the summary (automatic creation), just open it
+        if (meetingUrl) {
+            window.open(meetingUrl, '_blank');
+            setStep('counseling');
+            return;
+        }
+
         setIsProcessing(true);
         try {
             const result = await requestCounseling(userId, summary.summary_id);
             setMeetingUrl(result.meeting_url);
+            window.open(result.meeting_url, '_blank'); // Open immediately
             setStep('counseling');
         } catch (error) {
             console.error('Counseling error:', error);
-            // Demo fallback
-            setMeetingUrl('https://webex.com/meet/demo');
+            const demoUrl = 'https://webex.com/meet/demo';
+            setMeetingUrl(demoUrl);
+            window.open(demoUrl, '_blank');
             setStep('counseling');
         } finally {
             setIsProcessing(false);
@@ -78,13 +92,13 @@ export default function ChatPage() {
 
     if (!isStarted) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-6">
-                <div className="card max-w-md w-full text-center">
-                    <div className="text-5xl mb-6 animate-float">💜</div>
-                    <h1 className="text-2xl font-bold gradient-text mb-4">
+            <div style={{ height: 'calc(100vh - 80px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+                <div className="card" style={{ maxWidth: '28rem', width: '100%', textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }} className="animate-float">🌿</div>
+                    <h1 className="gradient-text" style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
                         마음쉼터에 오신 것을 환영해요
                     </h1>
-                    <p className="text-gray-400 mb-6">
+                    <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
                         상담을 시작하기 전에 닉네임을 알려주세요.
                         <br />
                         실명이 아니어도 괜찮아요.
@@ -94,13 +108,15 @@ export default function ChatPage() {
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value)}
                         placeholder="닉네임을 입력해주세요"
-                        className="input mb-4"
+                        className="input"
+                        style={{ marginBottom: '1rem' }}
                         onKeyPress={(e) => e.key === 'Enter' && handleStart()}
                     />
                     <button
                         onClick={handleStart}
                         disabled={!nickname.trim()}
-                        className="btn-primary w-full disabled:opacity-50"
+                        className="btn-primary"
+                        style={{ width: '100%', opacity: !nickname.trim() ? 0.5 : 1 }}
                     >
                         시작하기
                     </button>
@@ -110,16 +126,15 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="min-h-screen flex">
-            {/* Chat Panel */}
-            <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+        <div style={{ height: 'calc(100vh - 80px)', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '56rem', width: '100%', height: '100%' }}>
                 {step === 'chat' && (
-                    <>
-                        <div className="flex-1 h-[calc(100vh-200px)]">
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
                             <ChatInterface onSessionReady={handleSessionReady} />
                         </div>
                         {sessionId && (
-                            <div className="p-4 border-t border-zinc-800 text-center">
+                            <div style={{ padding: '1rem', borderTop: '1px solid #e5e7eb', textAlign: 'center', flexShrink: 0 }}>
                                 <button
                                     onClick={handleCreateSummary}
                                     disabled={isProcessing}
@@ -129,52 +144,51 @@ export default function ChatPage() {
                                 </button>
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
 
                 {step === 'summary' && summary && (
-                    <div className="flex-1 flex items-center justify-center p-6">
-                        <div className="card max-w-2xl w-full animate-fadeIn">
-                            <div className="text-center mb-8">
-                                <div className="text-5xl mb-4">📊</div>
-                                <h2 className="text-2xl font-bold gradient-text">
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', overflow: 'auto' }}>
+                        <div className="card animate-fadeIn" style={{ maxWidth: '42rem', width: '100%' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                                <h2 className="gradient-text" style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                                     감정 분석 결과
                                 </h2>
-                                <p className="text-gray-400 mt-2">
+                                <p style={{ color: '#6b7280', marginTop: '0.5rem' }}>
                                     AI가 대화를 바탕으로 분석한 결과입니다
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="bg-zinc-800/50 rounded-xl p-4">
-                                    <p className="text-gray-400 text-sm mb-1">주요 감정</p>
-                                    <p className="text-2xl font-bold text-indigo-400">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ background: 'rgba(107, 155, 210, 0.1)', borderRadius: '0.75rem', padding: '1rem' }}>
+                                    <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>주요 감정</p>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#5A8BC2' }}>
                                         {summary.dominant_emotion}
                                     </p>
                                 </div>
-                                <div className="bg-zinc-800/50 rounded-xl p-4">
-                                    <p className="text-gray-400 text-sm mb-1">감정 강도</p>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                                <div style={{ background: 'rgba(168, 213, 186, 0.1)', borderRadius: '0.75rem', padding: '1rem' }}>
+                                    <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>감정 강도</p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ flex: 1, height: '0.5rem', background: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
                                             <div
-                                                className="h-full bg-gradient-to-r from-indigo-500 to-pink-500"
-                                                style={{ width: `${summary.intensity_score * 100}%` }}
+                                                style={{ height: '100%', background: 'linear-gradient(90deg, #6B9BD2, #A8D5BA)', width: `${summary.intensity_score * 100}%` }}
                                             />
                                         </div>
-                                        <span className="text-sm text-gray-300">
+                                        <span style={{ fontSize: '0.875rem', color: '#374151' }}>
                                             {Math.round(summary.intensity_score * 100)}%
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mb-6">
-                                <p className="text-gray-400 text-sm mb-2">감정 태그</p>
-                                <div className="flex flex-wrap gap-2">
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>감정 태그</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {summary.emotion_tags.map((tag, idx) => (
                                         <span
                                             key={idx}
-                                            className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm"
+                                            style={{ padding: '0.25rem 0.75rem', background: 'rgba(107, 155, 210, 0.2)', color: '#5A8BC2', borderRadius: '9999px', fontSize: '0.875rem' }}
                                         >
                                             {tag}
                                         </span>
@@ -182,13 +196,13 @@ export default function ChatPage() {
                                 </div>
                             </div>
 
-                            <div className="mb-6">
-                                <p className="text-gray-400 text-sm mb-2">반복 주제</p>
-                                <div className="flex flex-wrap gap-2">
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>반복 주제</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {summary.repeated_topics.map((topic, idx) => (
                                         <span
                                             key={idx}
-                                            className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-sm"
+                                            style={{ padding: '0.25rem 0.75rem', background: 'rgba(168, 213, 186, 0.2)', color: '#6B9B7A', borderRadius: '9999px', fontSize: '0.875rem' }}
                                         >
                                             {topic}
                                         </span>
@@ -196,39 +210,59 @@ export default function ChatPage() {
                                 </div>
                             </div>
 
-                            <div className="mb-8">
+                            <div style={{ marginBottom: '2rem' }}>
                                 <span className={summary.risk_flag ? 'badge-risk' : 'badge-safe'}>
                                     {summary.risk_flag ? '⚠️ 주의 필요' : '✅ 안정적'}
                                 </span>
+                                {summary.risk_flag && (
+                                    <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem', fontWeight: 500 }}>
+                                        전문가와의 상담이 권장됩니다. 자동으로 상담이 예약되었습니다.
+                                    </p>
+                                )}
                             </div>
 
-                            <div className="flex gap-4">
+                            <div style={{ display: 'flex', gap: '1rem' }}>
                                 <button
                                     onClick={() => setStep('chat')}
-                                    className="btn-secondary flex-1"
+                                    className="btn-secondary"
+                                    style={{ flex: 1 }}
                                 >
                                     대화 계속하기
                                 </button>
-                                <button
-                                    onClick={handleRequestCounseling}
-                                    disabled={isProcessing}
-                                    className="btn-primary flex-1"
-                                >
-                                    {isProcessing ? '연결 중...' : '👩‍⚕️ 상담사 연결하기'}
-                                </button>
+                                {meetingUrl ? (
+                                    <a
+                                        href={meetingUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`btn-primary ${summary.risk_flag ? 'animate-pulse-slow' : ''}`}
+                                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                                        onClick={() => setStep('counseling')}
+                                    >
+                                        {summary.risk_flag ? '🚨 상담실 바로 입장하기' : '👩‍⚕️ 상담실 입장하기'}
+                                    </a>
+                                ) : (
+                                    <button
+                                        onClick={handleRequestCounseling}
+                                        disabled={isProcessing}
+                                        className={`btn-primary ${summary.risk_flag ? 'animate-pulse-slow' : ''}`}
+                                        style={{ flex: 1 }}
+                                    >
+                                        {isProcessing ? '연결 중...' : '👩‍⚕️ 상담사 연결하기'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
                 )}
 
                 {step === 'counseling' && meetingUrl && (
-                    <div className="flex-1 flex items-center justify-center p-6">
-                        <div className="card max-w-md w-full text-center animate-fadeIn">
-                            <div className="text-6xl mb-6 animate-float">🎉</div>
-                            <h2 className="text-2xl font-bold gradient-text mb-4">
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+                        <div className="card animate-fadeIn" style={{ maxWidth: '28rem', width: '100%', textAlign: 'center' }}>
+                            <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }} className="animate-float">🎉</div>
+                            <h2 className="gradient-text" style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
                                 상담이 준비되었습니다!
                             </h2>
-                            <p className="text-gray-400 mb-6">
+                            <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
                                 전문 상담사와의 화상 상담이 예약되었습니다.
                                 <br />
                                 아래 버튼을 클릭하여 상담실에 입장해주세요.
@@ -237,13 +271,20 @@ export default function ChatPage() {
                                 href={meetingUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="btn-primary inline-block w-full py-4 text-lg"
+                                className="btn-primary"
+                                style={{ display: 'block', width: '100%', padding: '1rem', fontSize: '1.125rem' }}
                             >
                                 🎥 상담실 입장하기
                             </a>
-                            <p className="text-sm text-gray-500 mt-4">
-                                Cisco Webex를 통해 안전하게 연결됩니다
+                            <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '1rem' }}>
+                                새 창에서 Cisco Webex가 열립니다
                             </p>
+                            <button
+                                onClick={() => setStep('chat')}
+                                style={{ marginTop: '1rem', color: '#6b7280', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                                초기 화면으로 돌아가기
+                            </button>
                         </div>
                     </div>
                 )}

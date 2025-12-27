@@ -44,10 +44,13 @@ export class ChatService {
         // Note: In a real app, you might want to limit context window size
         let aiResponse = await this.aiService.generateChatResponse(messages, message);
 
+        console.log('[DEBUG] Full AI Response:', aiResponse);
+
         let meeting_url: string | undefined;
 
         // 3. Check for [RISK_DETECTED] tag
         if (aiResponse.includes('[RISK_DETECTED]')) {
+            console.log('[ALERT] RISK_DETECTED tag found in AI response!');
             // Remove the tag from the visible response
             aiResponse = aiResponse.replace('[RISK_DETECTED]', '').trim();
 

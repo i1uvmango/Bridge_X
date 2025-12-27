@@ -172,11 +172,11 @@ export default function ChatPage() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <div style={{ flex: 1, height: '0.5rem', background: '#e5e7eb', borderRadius: '9999px', overflow: 'hidden' }}>
                                             <div
-                                                style={{ height: '100%', background: 'linear-gradient(90deg, #6B9BD2, #A8D5BA)', width: `${summary.intensity_score * 100}%` }}
+                                                style={{ height: '100%', background: 'linear-gradient(90deg, #6B9BD2, #A8D5BA)', width: `${Math.min(summary.intensity_score > 1 ? summary.intensity_score * 10 : summary.intensity_score * 100, 100)}%` }}
                                             />
                                         </div>
                                         <span style={{ fontSize: '0.875rem', color: '#374151' }}>
-                                            {Math.round(summary.intensity_score * 100)}%
+                                            {Math.min(Math.round(summary.intensity_score > 1 ? summary.intensity_score * 10 : summary.intensity_score * 100), 100)}%
                                         </span>
                                     </div>
                                 </div>
